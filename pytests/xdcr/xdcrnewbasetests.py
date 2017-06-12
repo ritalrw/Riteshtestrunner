@@ -1155,8 +1155,10 @@ class CouchbaseCluster:
                 rest.remove_all_replications()
                 rest.remove_all_remote_clusters()
             else:
-                self.__remove_all_replications()
-                self.__remove_all_remote_clusters()
+                rest.remove_all_replications()
+                rest.remove_all_remote_clusters()
+#                 self.__remove_all_replications()
+#                 self.__remove_all_remote_clusters()
             rest.remove_all_recoveries()
             self.__stop_rebalance()
             self.__log.info("cleanup {0}".format(self.__nodes))

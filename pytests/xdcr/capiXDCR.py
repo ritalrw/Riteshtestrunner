@@ -40,6 +40,12 @@ class Capi(XDCRNewBaseTest, NewUpgradeBaseTest):
         super(Capi, self).tearDown()
 
     def _start_es_replication(self, bucket='default', xdcr_params={}):
+#         shell = RemoteMachineShellConnection(self.src_master)
+#         command = "/etc/init.d/couchbase-server restart"
+#         shell.execute_command(command)
+#         import time
+#         time.sleep(20)
+        
         rest_conn = RestConnection(self.src_cluster.get_master_node())
         if bucket == 'default':
             self.log.info("Creating default bucket")
@@ -165,7 +171,7 @@ class Capi(XDCRNewBaseTest, NewUpgradeBaseTest):
 
         self._wait_for_es_replication_to_catchup()
 
-        self.sleep(300)
+        self.sleep(60)
 
         vb0_node = None
         nodes = self.src_cluster.get_nodes()
