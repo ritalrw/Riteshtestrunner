@@ -11,7 +11,7 @@ import uuid
 from copy import deepcopy
 from threading import Thread
 from TestInput import TestInputSingleton
-from testconstants import MIN_KV_QUOTA, INDEX_QUOTA, FTS_QUOTA
+from testconstants import MIN_KV_QUOTA, INDEX_QUOTA, FTS_QUOTA, CBAS_QUOTA
 from testconstants import COUCHBASE_FROM_VERSION_4, IS_CONTAINER
 
 
@@ -818,32 +818,30 @@ class RestConnection(object):
             kv_quota = int(self.get_nodes_self().mcdMemoryReserved)
         info = self.get_nodes_self()
 
-
         cb_version = info.version[:5]
         if cb_version in COUCHBASE_FROM_VERSION_4:
-            if "index" in self.node_services and "fts" not in self.node_services:
+            if "index" in self.node_services:
                 log.info("quota for index service will be %s MB" % (INDEX_QUOTA))
-                kv_quota = kv_quota - INDEX_QUOTA
-                if kv_quota < MIN_KV_QUOTA:
+                kv_quota -= INDEX_QUOTA
+                log.info("set index quota to node %s " % self.ip)
+                self.set_service_memoryQuota(service='indexMemoryQuota', MemoryQuota=INDEX_QUOTA)
+                
+            if "fts" in self.node_services:
+                log.info("quota for fts service will be %s MB" % (FTS_QUOTA))
+                kv_quota -= FTS_QUOTA
+                log.info("set both index and fts quota at node %s "% self.ip)
+                self.set_service_memoryQuota(service='ftsMemoryQuota', MemoryQuota=FTS_QUOTA)
+                
+            if "cbas" in self.node_services:
+                log.info("quota for cbas service will be %s MB" % (CBAS_QUOTA))
+                kv_quota -= CBAS_QUOTA
+                self.set_service_memoryQuota(service = "cbasMemoryQuota", MemoryQuota=CBAS_QUOTA)
+            
+            kv_quota -= 1
+            if kv_quota < MIN_KV_QUOTA:
                     raise Exception("KV RAM needs to be more than %s MB"
                             " at node  %s"  % (MIN_KV_QUOTA, self.ip))
-                elif "index" in self.node_services and "fts" in self.node_services:
-                    log.info("quota for index service will be %s MB" \
-                                                      % (INDEX_QUOTA))
-                    log.info("quota for fts service will be %s MB" \
-                                                       % (FTS_QUOTA))
-                    kv_quota = kv_quota - INDEX_QUOTA - FTS_QUOTA
-                    if kv_quota < MIN_KV_QUOTA:
-                        raise Exception("KV RAM need to be more than %s MB"
-                                 " at node  %s"  % (MIN_KV_QUOTA, self.ip))
-                elif "fts" in self.node_services and "index" not in self.node_services:
-                    log.info("quota for fts service will be %s MB" \
-                                                      % (FTS_QUOTA))
-                    kv_quota = kv_quota - FTS_QUOTA
-                    if kv_quota < MIN_KV_QUOTA:
-                        raise Exception("KV RAM need to be more than %s MB"
-                                " at node  %s"  % (MIN_KV_QUOTA, server.ip))
-                    self.set_fts_memoryQuota(ftsMemoryQuota=FTS_QUOTA)
+
         log.info("quota for kv: %s MB" % kv_quota)
         self.init_cluster_memoryQuota(self.username, self.password, kv_quota)
         if cb_version in COUCHBASE_FROM_VERSION_4:
@@ -888,27 +886,43 @@ class RestConnection(object):
         status, content, header = self._http_request(api, 'POST', params)
         return status
 
-    def set_indexer_memoryQuota(self, username='Administrator',
-                                 password='password',
-                                 indexMemoryQuota=256):
-        api = self.baseUrl + 'pools/default'
-        params = urllib.urlencode({'indexMemoryQuota': indexMemoryQuota})
-        log.info('pools/default params : {0}'.format(params))
-        status, content, header = self._http_request(api, 'POST', params)
-        if status:
-            return status
-        else:
-            return content
+# #DELETE THIS FUNCTION AND USE set_service_memoryQuota WHICH IS A GENERIC ONE.
+#     def set_indexer_memoryQuota(self, username='Administrator',
+#                                  password='password',
+#                                  indexMemoryQuota=256):
+#         api = self.baseUrl + 'pools/default'
+#         params = urllib.urlencode({'indexMemoryQuota': indexMemoryQuota})
+#         log.info('pools/default params : {0}'.format(params))
+#         status, content, header = self._http_request(api, 'POST', params)
+#         if status:
+#             return status
+#         else:
+#             return content
+#         
+# #DELETE THIS FUNCTION AND USE set_service_memoryQuota WHICH IS A GENERIC ONE.
+#     def set_fts_memoryQuota(self, username='Administrator',
+#                                  password='password',
+#                                  ftsMemoryQuota=256):
+#         api = self.baseUrl + 'pools/default'
+#         params = urllib.urlencode({'ftsMemoryQuota': ftsMemoryQuota})
+#         log.info('pools/default params : {0}'.format(params))
+#         status, content, header = self._http_request(api, 'POST', params)
+#         return status
 
-    def set_fts_memoryQuota(self, username='Administrator',
+    def set_service_memoryQuota(self, username='Administrator',
                                  password='password',
-                                 ftsMemoryQuota=256):
+                                 service = None,
+                                 MemoryQuota=256):
+        ''' cbasMemoryQuota for cbas service.
+            ftsMemoryQuota for fts service.
+            indexMemoryQuota for index service.'''
+        
         api = self.baseUrl + 'pools/default'
-        params = urllib.urlencode({'ftsMemoryQuota': ftsMemoryQuota})
+        params = urllib.urlencode({service: MemoryQuota})
         log.info('pools/default params : {0}'.format(params))
         status, content, header = self._http_request(api, 'POST', params)
         return status
-
+    
     def set_cluster_name(self, name):
         api = self.baseUrl + 'pools/default'
         if name is None:

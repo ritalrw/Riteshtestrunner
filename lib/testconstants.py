@@ -118,6 +118,7 @@ NUM_ERLANG_THREADS = 16
 MIN_KV_QUOTA = 250
 INDEX_QUOTA = 512
 FTS_QUOTA = 256
+CBAS_QUOTA = 256
 LINUX_COUCHBASE_BIN_PATH = "/opt/couchbase/bin/"
 LINUX_NONROOT_CB_BIN_PATH = "~/opt/couchbase/bin/"
 NR_INSTALL_LOCATION_FILE = "nonroot_install_location.txt"

@@ -136,7 +136,7 @@ class NodeInitializeTask(Task):
         if self.index_quota_percent:
             self.index_quota = int((info.mcdMemoryReserved * 2/3) * \
                                       self.index_quota_percent / 100)
-            rest.set_indexer_memoryQuota(username, password, self.index_quota)
+            rest.set_service_memoryQuota(service='indexMemoryQuota', username=username, password=password, MemoryQuota=self.index_quota)
         if self.quota_percent:
            self.quota = int(info.mcdMemoryReserved * self.quota_percent / 100)
 
@@ -154,7 +154,7 @@ class NodeInitializeTask(Task):
                 if kv_quota > MIN_KV_QUOTA:
                     if kv_quota < int(self.quota):
                         self.quota = kv_quota
-                    rest.set_indexer_memoryQuota(indexMemoryQuota=index_quota)
+                    rest.set_service_memoryQuota(service='indexMemoryQuota', MemoryQuota=index_quota)
                 else:
                     self.set_exception(Exception("KV RAM need to be larger than %s MB "
                                       "at node  %s"  % (MIN_KV_QUOTA, self.server.ip)))
